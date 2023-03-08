@@ -41,7 +41,6 @@ void print_qr(int size_qr, vector<vector<int>> qr){
         cout << "-";
     }
     cout << "+\n";
-    
 
     return;
 }
@@ -105,6 +104,17 @@ int main(){
 
         //Process QR
         generate_qrs(qr);
+
+        if(generated == 0){
+            cout << "DEFECT: No QR Code generated!\n";
+        }
+        else if(generated == 1){
+            cout << "Valid case: 1 QR code decoded\n";
+            print_qr(size_qr, qr);
+        }
+        else{
+            cout << "INVALID: " << generated << " QR Codes generated\n";
+        }
         
 
         //We clear the input lines 
@@ -121,7 +131,7 @@ int main(){
 }
 
 void generate_qrs(vector <vector<int>> qr){
-
+    
     
     return;
 }
