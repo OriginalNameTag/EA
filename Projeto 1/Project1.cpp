@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <set>
 #include <cmath>
 
 using namespace std;
@@ -15,51 +16,27 @@ vector <int> db; //Black cells in each diagonal
 
 vector<int> quadrants = {0,0,0,0};
 
+set<vector<vector<int>>> impossible;
+vector<vector<int>> final_qr;
+
 bool validate(int size);
 
-void preprocess(vector<vector<int>>&qr);
-void generate_qrs(vector<vector<int>>& qr, int line, int collumn);
+void preprocess(vector<vector<int>>& qr);
+void generate_qrs(vector<vector<int>>& qr, int line, int column);
 
-bool validateLineBlack(vector<int> line, int collumn, int lineb);
+bool possible(vector<vector<int>> qr);
+void add_impossible(vector<vector<int>> qr);
+
+bool validateLine(vector<int> line, int column, int lb);
 bool validateLineTransactions(vector<int> line, int linet, int x);
 
-bool validateCollumnBlack(vector<vector<int>> qr, int line, int collumn);
-bool validataCollumnTransactions(vector<vector<int>> qr, int collumnt);
+bool validateCollumn(vector<vector<int>> qr, int line, int column);
+bool validataCollumnTransactions(vector<vector<int>> qr, int column);
 
-bool checkLine(vector<vector<int>> qr, int line, int col, int nLine);
-bool checkCol(vector<vector<int>> qr, int line, int col, int nCol);
+bool validateDiagonals(vector<vector<int>> qr, int line, int column);
+bool validateQuadrants(vector<vector<int>> qr, int line, int column);
 
-bool checkQuadrants(vector<vector<int>> qr);
-
-
-void print_qr(int size_qr, vector<vector<int>> qr){
-
-	cout << "+";
-	for(int i=0; i<size_qr; ++i){
-			cout << "-";
-	}
-	cout << "+\n";
-	
-	for(int i=0; i<size_qr; ++i){
-		cout << "|";
-		for(int j=0; j<size_qr; ++j){
-				if(qr[i][j] == 0){
-					cout << " ";
-				}
-				else{
-					cout << "#";
-				}
-			}
-			cout << "|\n"; 
-	}
-	cout << "+";
-	for(int i=0; i<size_qr; ++i){
-			cout << "-";
-	}
-	cout << "+\n";
-
-	return;
-}
+void print_qr(vector<vector<int>> qr);
 
 int main(){
 	ios_base::sync_with_stdio(0);
@@ -106,8 +83,14 @@ int main(){
 
 			vector<vector<int>> qr(size_qr, vector<int>(size_qr, 0));
 			//Validate input to check for defects and then we generate qr
+			
 			if(validate(size_qr)){
+				
+				//preprocesser not return properly, maybe it gets stuck somewhere(?)
 				preprocess(qr);
+				generate_qrs(qr, 0, 0);
+				print_qr(qr);
+
 				//generate_qrs(qr, 0, 0);
 			}
 			
@@ -117,7 +100,7 @@ int main(){
 			}
 			else if(generated == 1){
 				cout << "Valid case: 1 QR code decoded\n";
-				print_qr(size_qr, qr);
+				//print_qr(qr);
 			}
 			else{
 				cout << "INVALID: " << generated << " QR Codes generated\n";
@@ -209,6 +192,8 @@ bool validate(int size_qr){
 //Intended to fill out the black cells in the matrix that are obivous given the input
 //need to differ from 0 and 1 so we'll use 2 and 3 for whites and blacks most obvious example are diagonals=N or 0, same with transactions
 //need to save filled cells to check quadrants?
+
+//maybe using diagonals like i==j to process both collumns and lines is better
 void preprocess(vector<vector<int>>& qr){
 	int size_qr = (int)qr.size();
 
@@ -234,11 +219,17 @@ void preprocess(vector<vector<int>>& qr){
 			}
 		}
 		//Fill inside besides edges
-		else if(lt[i] == 1 && lb[i] == size_qr-1){
-			fill(qr[i][1], qr[i][size_qr-1], 3);
+		if(lt[i] == 1 && lb[i] == size_qr-1){
+			//fill(qr[i][1], qr[i][size_qr-1], 3);
+			for(int j=1; j<size_qr-1; ++j){
+				qr[i][j] = 3;
+			}
 		}
 		else if(lt[i] == 1 && lb[i] == 1){
-			fill(qr[i][1], qr[i][size_qr-1], 2);
+			//fill(qr[i][1], qr[i][size_qr-1], 2);
+			for(int j=1; j<size_qr-1; ++j){
+				qr[i][j] = 2;
+			}
 		}
 	}
 	//collumns
@@ -256,10 +247,10 @@ void preprocess(vector<vector<int>>& qr){
 		else if(ct[i] == size_qr -1 && cb[i] == size_qr/2 + 1){
 			for(int j=0; j<size_qr; ++j){
 				if(j % 2 == 0){
-					qr[j][i] == 2;
+					qr[j][i] = 2;
 				}
 				else{
-					qr[j][i] == 3;
+					qr[j][i] = 3;
 				}
 			}
 		}
@@ -304,7 +295,8 @@ void preprocess(vector<vector<int>>& qr){
 			}
 		}
 	}
-	//Quadrants
+	//Quadrants === something wrong here ===
+	/*
 	int size;
 	bool q1 = false;
 	bool q2 = false;
@@ -365,32 +357,51 @@ void preprocess(vector<vector<int>>& qr){
 			}
 		}
 	}
-
+	*/
 	return;
 }
 
 
 
 //will this ever be finished :c
-void generate_qrs(vector<vector<int>>& qr, int line, int collumn){
-	int size_qr = qr.size();
-	//If line and collumn are the last one, we generated a qr sucessfully(?)
-	if(line==size_qr-1 && collumn == size_qr){
-		++generated;
+//was thinking if this function wouldnt work to generate multiple qrs, but since we dont
+//have to store more than one qr we can work with the same just copy it to not alter the ones in recursion
+void generate_qrs(vector<vector<int>>& qr, int line, int column){
+	int size_qr = (int)qr.size();
+	if(!possible(qr)){
+		return;
 	}
-	//Alter Line and reset Collumn
-	else if(collumn==size_qr && line<size_qr){
+
+	//Switch Line and reset Collumn
+	if(column == size_qr && line<size_qr){
 		++line;
-		collumn = 0;
+		column = 0;
 	}
+	//If line equals size of qr then it's over, dont need to see collumns
+	if(line==size_qr){
+		++generated;
+		final_qr = qr;
+		return;
+	}
+	vector<vector<int>> copy = qr;
+	//deal with the pre processing
+	//If white (2)
+	if(copy[line][column] == 2){
+		if(validateLine(copy[line], column, lb[line])){
+			generate_qrs(copy, line, column+1);
+		}
+		impossible.insert(copy);
+		return;
+	}
+
 	//change to black
-	qr[line][collumn] = 1;
+	qr[line][column] = 1;
 
 	//Validations
-	if(validateLineBlack(qr[line], collumn, lb[line]) && validateCollumnBlack(qr, line, collumn)){
+	//if(validateLineBlack(qr[line], column, lb[line]) && validateCollumnBlack(qr, line, column)){
 		//generate_qrs(qr, line, collumn+1);
 
-	}
+	//}
 	
 	//After validations we alter qr[line][collumn] to black
 
@@ -399,137 +410,95 @@ void generate_qrs(vector<vector<int>>& qr, int line, int collumn){
 	return;
 }
 
-//Messy content
-bool validateLineBlack(vector<int> line, int collumn, int lineb){
-	int counter = 0;
-	for(int i = 0; i < collumn; ++i){
-		if(line[i] == 1){
-			++counter;
-		}
-	}
-
-	if(counter<=lb[collumn] && collumn <line.size()-1){
-		return true;	
-	}
-	
-	return false;
-	
+bool possible(vector<vector<int>> qr){
+    auto inserting = impossible.find(qr);
+    return inserting == impossible.end(); 
+}
+void add_impossible(vector<vector<int>> qr){
+	impossible.insert(qr);
+	return;
 }
 
-bool validateCollumnBlack(vector<vector<int>> qr, int line, int collumn){
-	
-	int size_collumn = qr.size();
+
+bool validateLine(vector<int> line, int column, int lb){
 	int counter = 0;
-	
-	for(int i = 0; i < size_collumn; ++i){
-		if(qr[i][collumn] == 1){
+	int size_qr = (int)line.size();
+
+	for(int i=0; i<column; ++i){
+		if(line[i] == 1 || line[i] == 3){
 			++counter;
 		}
 	}
-	if(counter  <= cb[collumn] && line != size_collumn){
+	if(counter <= lb && column<size_qr-1){
 		return true;
 	}
-
-	return false;
-	
+	return true;
 }
 
-bool validataCollumnTransactions(vector<vector<int>> qr, int collumnt){
+bool validateCollumn(vector<vector<int>> qr, int line, int column){
 	int counter = 0;
-	vector<vector<int>> outtrans(qr[0].size(),vector<int>(qr.size()));
 
-    for (size_t i = 0; i < qr.size(); ++i){
-        for (size_t j = 0; j < qr[0].size(); ++j){
-            outtrans[j][i] = qr[i][j];
-        }
-    }
-
-	if (validateLineTransactions(outtrans[collumnt], collumnt, 1)){
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool validateLineTransactions(vector<int> line, int linet, int x){
-    int counter = 0;
-
-    for(int i=0; i < line.size()-1; ++i){
-        if(line[i] != line[i+1]){
-            counter++; 
-        }
-    }
-
-	if (x == 0){
-        if (counter==lt[linet]){
-            return true;
-		}
-        return false;
-    } else {
-        if (counter==ct[linet]){
-            return true;
-        }
-        return false;
-    }
-}
-
-// Check if the number of black elements in a line is correct
-bool checkLine(vector<vector<int>> qr, int line, int col, int nLine){
-    int total = 0;
-    
-    for (int i = 0; i < qr[col].size(); i++){
-        total = total + qr[line][i];
-    }
-
-    if (total == nLine){
-        return true;
-    } else {
-        return false;
-    }
-}
-
-// Check if the number of black elements in a collumn is correct
-bool checkCol(vector<vector<int>> qr, int line, int col, int nCol){
-    int total = 0;
-    
-    for (int i = 0; i < qr[line].size(); i++){
-        total = total + qr[i][col];
-    }
-
-	if(total == nCol){
-        return true;
-    } else {
-        return false;
-    }
-}
-
-// Check the number of black pieces in each quadrant
-bool checkQuadrants(vector<vector<int>> qr){
-	int q1 = 0;
-	int q2 = 0;
-	int q3 = 0;
-	int q4 = 0;
-	int n = qr.size();
-	
-	for (int i = 0; i < n; i++){
-		for (int j = 0; j < qr[i].size(); j++){
-			// Quadrant 1
-			if (i+1 <= floor(n/2) && j+1 > floor(n/2) ){
-				q1 = q1 + qr[i][j];
-			}
-			// Quadrant 2
-			if (i+1 <= floor(n/2) && j+1 <= floor(n/2) ){
-                q2 = q2 + qr[i][j];
-			}
-			// Quadrant 3
-			if (i+1 > floor(n/2) && j+1 <= floor(n/2) ){
-                q3 = q3 + qr[i][j];
-			}
-			// Quadrant 4
-			if (i+1 > floor(n/2) && j+1 > floor(n/2) ){
-                q4 = q4 + qr[i][j];
-			}
+	for(int i = 0; i< line; ++i){
+		if(qr[column][i] == 1 || qr[column][i] == 3){
+			++counter;
 		}
 	}
 	return true;
+}
+bool validataCollumnTransactions(vector<vector<int>> qr, int collumnt){
+	return true;
+}
+
+bool validateDiagonals(vector<vector<int>> qr, int line, int column){
+	int diagonal1 = 0;
+	int diagonal2 = 0;
+	int size_qr = (int)qr.size();
+	
+	for(int i=0; i<line; ++i){
+		for(int j=0; j<column; ++column){
+			if(i==j &&(qr[column][i] == 1 || qr[column][i] == 3)){
+				++diagonal1;
+			}
+			if(size_qr-i-1 == j && (qr[column][i] == 1 || qr[column][i] == 3)){
+				++diagonal2;
+			}
+		}
+	}
+
+	if(diagonal1 > db[0] || diagonal2 > db[1]){
+		return false;
+	}
+	//missing validations
+	return true;
+}
+bool validateQuadrants(vector<vector<int>> qr, int line, int collumn){
+	return true;
+}
+
+void print_qr(vector<vector<int>> qr){
+	int size_qr = (int)qr.size();
+	cout << "+";
+	for(int i=0; i<size_qr; ++i){
+			cout << "-";
+	}
+	cout << "+\n";
+	
+	for(int i=0; i<size_qr; ++i){
+		cout << "|";
+		for(int j=0; j<size_qr; ++j){
+				if(qr[i][j] %2 == 0){
+					cout << " ";
+				}
+				else{
+					cout << "#";
+				}
+			}
+			cout << "|\n"; 
+	}
+	cout << "+";
+	for(int i=0; i<size_qr; ++i){
+			cout << "-";
+	}
+	cout << "+\n";
+	return;
 }
