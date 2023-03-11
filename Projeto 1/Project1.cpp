@@ -305,7 +305,66 @@ void preprocess(vector<vector<int>>& qr){
 		}
 	}
 	//Quadrants
+	int size;
+	bool q1 = false;
+	bool q2 = false;
+	bool q3 = false;
+	bool q4 = false;
 
+	if(size_qr%2 == 0){
+		size = size_qr/2;
+		if(qb[0] == size*size){
+			q1 = true;
+		}
+		if(qb[1] == size*size){
+			q2 = true;
+		}
+		if(qb[2] == size*size){
+			q3 = true;
+		}
+		if(qb[3] == size*size){
+			q3 = true;
+		}
+	}
+	else{
+		size = size_qr/2 + 1;
+		if(qb[0] == size*(size-1)){
+			q1 = true;
+		}
+		if(qb[1] == (size-1)*(size-1)){
+			q2 = true;
+		}
+		if(qb[2] == (size)*(size-1)){
+			q3 = true;
+		}
+		if(qb[3] == (size)*(size)){
+			q3 = true;
+		}
+	}
+
+	if(q1 || q2 || q3 || q4 || qb[0] == 0 || qb[1] == 0 || qb[2] == 0 || qb[3] == 0){
+		for (int i = 1; i < size_qr+1; i++) {
+			for (int j = 1; j < size_qr+1; j++) {
+
+				//First Quadrant
+				if (i <= size_qr / 2 && j > size_qr / 2 && (q1 || qb[0] == 0)){
+					qr[i][j] = q1 ? 2 : 3;
+				}
+				//Second Quadrant
+				else if (i <= size_qr / 2 && j <= size_qr / 2 && (q2 || qb[1] == 0)){
+					qr[i][j] = q2 ? 2 : 3;
+				}
+				//Third Quadrant
+				else if (i > size_qr / 2 && j <= size_qr / 2 && (q3 || qb[2] == 0)){
+					qr[i][j] = q3 ? 2 : 3;
+				}
+				//Fourth Quadrant
+				else if (i > size_qr / 2 && j > size_qr / 2 && (q4 || qb[3] == 0)){
+					qr[i][j] = 3;
+				}
+			}
+		}
+	}
 
 	return;
 }
