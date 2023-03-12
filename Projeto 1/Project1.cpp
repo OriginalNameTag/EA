@@ -85,13 +85,12 @@ int main(){
 
 			//Validate input to check for defects and then we generate qr
 			if(validate(size_qr)){
-				cout<<"Here";
+				
 				//preprocesser not return properly, maybe it gets stuck somewhere(?)
 				preprocess(qr);
-
-				//generate_qrs(qr, 0, 0);
-				cout << "here?";
-
+				
+				generate_qrs(qr, 0, 0);
+				
 				//generate_qrs(qr, 0, 0);
 			}
 			
@@ -379,44 +378,58 @@ void preprocess(vector<vector<int>>& qr){
 //CAN JUST CUT THIS IN HALF IF THE NUMBER OF TRANSITIONS ARE OVER, WE'RE ON A BLACK/WHITE WE FILL THE REST
 void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	int size_qr = (int)qr.size();
-	/*
-	if(!possible(qr)){
-		return;
-	}
-	*/
+	cout<< "#####################\n";
+	cout<<line <<column <<"\n";
+	//for(int i=0; i<size_qr; ++i){
+	//	for(int j=0; i<size_qr; ++j){
+	//		cout << qr[i][j];
+	//	}
+	//	cout<<"\n";
+	//}
+	
+	//if(!possible(qr)){
+		//return;
+	//}
 
-	//Switch Line and reset Collumn
-	if(column == size_qr && line<size_qr){
-		++line;
-		column = 0;
-	}
-	//If line equals size of qr then it's over, dont need to see collumns
-	if(line==size_qr){
-		++generated;
+	//If line equals size of qr then it's over
+	if (line == size_qr - 1 && column == size_qr - 1){
+	 	++generated;
 		final_qr = qr;
 		return;
 	}
+
 	vector<vector<int>> copy = qr;
 	//deal with the pre processing
 	//If white (2)
 	if(copy[line][column] == 2){
-		if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
-			generate_qrs(copy, line, column+1);
+		if(validateLine(copy[line], line, column)  && validateColumn(copy, line, column)  && validateLineTransactions(copy[line], line, column)  &&  validateColumnTransactions(copy, line, column)  && validateDiagonals(copy, line, column)  &&  validateQuadrants(copy, line, column)){
+			if(column+1 == size_qr){
+				generate_qrs(copy, line+1, 0);
+			}
+			else{
+				generate_qrs(copy, line, column+1);
+			}
 		}
 	
 		//impossible.insert(copy);
 		
-		return;
+		//return;
 	}
 	//If black (3)
 	else if(copy[line][column] == 3){
-		if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
-			generate_qrs(copy, line, column+1);
+		if(validateLine(copy[line], line, column)  &&  validateColumn(copy, line, column)  &&  validateLineTransactions(copy[line], line, column)  &&  validateColumnTransactions(copy, line, column)  && validateDiagonals(copy, line, column)  &&  validateQuadrants(copy, line, column)){
+			if(column+1 == size_qr){
+				generate_qrs(copy, line+1, 0);
+			}
+			else{
+				generate_qrs(copy, line, column+1);
+			}
+			
 		}
 		
 		//impossible.insert(copy);
-		
-		return;
+		//return;
+
 	}
 
 	//could probably save the validation so i dont have to call it everytime?
@@ -425,24 +438,34 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	//worth adding to impossible?
 	copy[line][column] = 1;
 
-	if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
-		generate_qrs(copy, line, column+1);
+	if(validateLine(copy[line], line, column)  &&  validateColumn(copy, line, column)  &&  validateLineTransactions(copy[line], line, column)  &&  validateColumnTransactions(copy, line, column)  &&  validateDiagonals(copy, line, column)  &&  validateQuadrants(copy, line, column)){
+		if(column+1 == size_qr){
+				generate_qrs(copy, line+1, 0);
+			}
+			else{
+				generate_qrs(copy, line, column+1);
+			}
 	}
-	else{
-		impossible.insert(copy);
-	}
+	//else{
+		//impossible.insert(copy);
+	//}
 	//change to white and calculate the same qr
 	copy[line][column] = 0;
 
-	if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
-		generate_qrs(copy, line, column+1);
+	if(validateLine(copy[line], line, column) && validateColumn(copy, line, column)  && validateLineTransactions(copy[line], line, column)  &&  validateColumnTransactions(copy, line, column)  &&  validateDiagonals(copy, line, column)  &&  validateQuadrants(copy, line, column)){
+		if(column+1 == size_qr){
+				generate_qrs(copy, line+1, 0);
+			}
+			else{
+				generate_qrs(copy, line, column+1);
+			}
+		return;
 	}
-	else{
-		impossible.insert(copy);
-	}
+	//else{
+		//impossible.insert(copy);
+	//}
 	
-	
-	return;
+	//return;
 }
 
 bool possible(vector<vector<int>> qr){
@@ -463,7 +486,7 @@ bool validateLine(vector<int> qr, int line, int column){
 			++counter;
 		}
 	}
-	if(counter < lb[line] && column == size_qr-1  || counter > lb[line]){
+	if((counter < lb[line] && column == size_qr-1)  || counter > lb[line]){
 		return false;
 	}
 	return true;
@@ -471,11 +494,14 @@ bool validateLine(vector<int> qr, int line, int column){
 
 bool validateColumn(vector<vector<int>> qr, int line, int column){
 	int counter = 0;
-
+	int size_qr = (int)qr.size();
 	for(int i = 0; i< line; ++i){
 		if(qr[column][i] == 1 || qr[column][i] == 3){
 			++counter;
 		}
+	}
+	if((counter < cb[column] && line == size_qr-1)|| (counter > cb[line])){
+		return false;
 	}
 	return true;
 }
