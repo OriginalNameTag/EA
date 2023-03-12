@@ -31,7 +31,7 @@ bool validateLine(vector<int> qr, int line, int column);
 bool validateLineTransactions(vector<int> qr, int line, int column);
 
 bool validateColumn(vector<vector<int>> qr, int line, int column);
-bool validateColumnTransactions(vector<vector<int>> qr, int column);
+bool validateColumnTransactions(vector<vector<int>> qr, int line, int column);
 
 bool validateDiagonals(vector<vector<int>> qr, int line, int column);
 bool validateQuadrants(vector<vector<int>> qr, int line, int column);
@@ -85,11 +85,12 @@ int main(){
 
 			//Validate input to check for defects and then we generate qr
 			if(validate(size_qr)){
-				
+				cout<<"Here";
 				//preprocesser not return properly, maybe it gets stuck somewhere(?)
 				preprocess(qr);
-				generate_qrs(qr, 0, 0);
-				
+
+				//generate_qrs(qr, 0, 0);
+				cout << "here?";
 
 				//generate_qrs(qr, 0, 0);
 			}
@@ -126,9 +127,9 @@ int main(){
 //stuff to add check bellow
 bool validate(int size_qr){
 	//lb, cb, lt, ct, qb, db
-
+	//cout << size_qr <<"\n";
 	//Missing some validations of input here?
-	for(int i = 0; i< size_qr; ++i){
+	for(int i = 0; i<size_qr; ++i){
 		if(lt[i] == 0 && ( lb[i]>0 && lb[i]<size_qr)){
 			//cout<<"here1";
 			return false;
@@ -153,7 +154,7 @@ bool validate(int size_qr){
 		return false;
 	}
 	//Quadrant 1+2 1+4 or 3+2 3+4 
-	//dont think we need floor cause it automatically rounds down?
+	//dont need floor cause it automatically rounds down
 	int lines21 = 0;
 	int lines34 = 0;
 	int columns23 = 0;
@@ -166,17 +167,21 @@ bool validate(int size_qr){
 	}
 	for(int i = size_qr/2; i < size_qr; ++i){
 		lines34 += lb[i];
-		columns14 += ct[i];
+		columns14 += cb[i];
 	}
+	//q1+q2 q1+q4 q2+q3 q3+q4
+	//cout << lines21 << "\n" << lines34 << "\n" << columns14 << "\n" << columns23 << "\n";
+	//cout << qb[0] << qb[1] << qb[2] <<qb[3];
 
 	if((qb[0]+qb[1]) != lines21 || (qb[1]+qb[2]) != columns23 || (qb[0]+qb[3]) != columns14 || (qb[2]+qb[3]) != lines34){
 		//cout <<"here4";
 		return false;
-	}
+	} 
 
 	//Validate diagonals, if N is odd we can see if diagonals work together
 	if(size_qr%2 == 1){
 		if((db[0] == size_qr && db[1] == 0) || (db[0] == 0 && db [1] == size_qr)){
+			//cout << "here5";
 			return false;
 		}
 
@@ -298,7 +303,8 @@ void preprocess(vector<vector<int>>& qr){
 		}
 	}
 	//Quadrants === something wrong here ===
-	/*
+	//SOMETHING TOTALLY WRONG HERE?
+	
 	int size;
 	bool q1 = false;
 	bool q2 = false;
@@ -337,8 +343,8 @@ void preprocess(vector<vector<int>>& qr){
 	}
 
 	if(q1 || q2 || q3 || q4 || qb[0] == 0 || qb[1] == 0 || qb[2] == 0 || qb[3] == 0){
-		for (int i = 1; i < size_qr+1; i++) {
-			for (int j = 1; j < size_qr+1; j++) {
+		for (int i = 1; i < size_qr; i++) {
+			for (int j = 1; j < size_qr; j++) {
 
 				//First Quadrant
 				if (i <= size_qr / 2 && j > size_qr / 2 && (q1 || qb[0] == 0)){
@@ -359,7 +365,7 @@ void preprocess(vector<vector<int>>& qr){
 			}
 		}
 	}
-	*/
+	
 	return;
 }
 
@@ -373,9 +379,11 @@ void preprocess(vector<vector<int>>& qr){
 //CAN JUST CUT THIS IN HALF IF THE NUMBER OF TRANSITIONS ARE OVER, WE'RE ON A BLACK/WHITE WE FILL THE REST
 void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	int size_qr = (int)qr.size();
+	/*
 	if(!possible(qr)){
 		return;
 	}
+	*/
 
 	//Switch Line and reset Collumn
 	if(column == size_qr && line<size_qr){
@@ -392,21 +400,21 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	//deal with the pre processing
 	//If white (2)
 	if(copy[line][column] == 2){
-		if(validateLine(copy[line], line, column)){
+		if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
 			generate_qrs(copy, line, column+1);
 		}
 	
-		impossible.insert(copy);
+		//impossible.insert(copy);
 		
 		return;
 	}
 	//If black (3)
 	else if(copy[line][column] == 3){
-		if(validateLine(copy[line], line, column)){
+		if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
 			generate_qrs(copy, line, column+1);
 		}
 		
-		impossible.insert(copy);
+		//impossible.insert(copy);
 		
 		return;
 	}
@@ -417,7 +425,7 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	//worth adding to impossible?
 	copy[line][column] = 1;
 
-	if(validateLine(qr[line], line, column)){
+	if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
 		generate_qrs(copy, line, column+1);
 	}
 	else{
@@ -426,7 +434,7 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	//change to white and calculate the same qr
 	copy[line][column] = 0;
 
-	if(validateLine(qr[line], line, column)){
+	if(validateLine(copy[line], line, column), validateColumn(copy, line, column), validateLineTransactions(copy[line], line, column), validateColumnTransactions(copy, line, column), validateDiagonals(copy, line, column), validateQuadrants(copy, line, column)){
 		generate_qrs(copy, line, column+1);
 	}
 	else{
@@ -475,9 +483,10 @@ bool validateLineTransactions(vector<int> qr, int line, int column){
 	int counter = 0;
 	int size_qr = (int)qr.size();
 	for(int i=0; i<column; ++i){
-		if((qr[i] == 1 && (qr[i+1] == 0 || qr[i+1]==2)) || (qr[i] == 3 && (qr[i+1] == 0 || qr[i+1]==2))){
+		if ((qr[i] + qr[i+1]) % 2 == 1){
 			++counter;
 		}
+		
 	}
 	if((column == size_qr-1 && counter != lt[line]) || counter > lt[line]){
 		return false;
@@ -485,7 +494,18 @@ bool validateLineTransactions(vector<int> qr, int line, int column){
 
 	return true;
 }
-bool validateColumnTransactions(vector<vector<int>> qr, int columnt){
+bool validateColumnTransactions(vector<vector<int>> qr, int line, int column){
+	int counter = 0;
+	int size_qr = (int)qr.size();
+	for(int i=0; i<line; ++i){
+		if((qr[i][column] + qr[i+1][column]) % 2 == 1){
+			++counter;
+		}
+	}
+	
+	if((line == size_qr && counter<ct[column]) || counter > ct[column]){
+		return false;
+	}
 	return true;
 }
 
@@ -521,8 +541,36 @@ bool validateQuadrants(vector<vector<int>> qr, int line, int column){
 
 	for(int i=0; i<line; ++i){
 		for(int j=0; j<column; ++j){
-
+			//Quadrant1
+			if(i <= size_qr/2 && j > size_qr){
+				if(qr[i][j] == 1 || qr[i][j] == 3){
+					++q1;
+				}
+			}
+			//Quadrant2
+			else if(i <= size_qr/2 && j <= size_qr/2){
+				if(qr[i][j] == 1 || qr[i][j] == 3){
+					++q2;
+				}
+			}
+			//Quadrant3
+			else if(i > size_qr/2 && j <= size_qr/2){
+				if(qr[i][j] == 1 || qr[i][j] == 3){
+					++q3;
+				}
+			}
+			//Quadrant4
+			else if(i > size_qr/2 && j > size_qr/2){
+				if(qr[i][j] == 1 || qr[i][j] == 3){
+					++q4;
+				}
+			}
+				
 		}
+	}
+
+	if(qb[0]<q1 || qb[1]<q2 || qb[2]<q3 || qb[3]<q4){
+		return false;
 	}
 
 	return true;
