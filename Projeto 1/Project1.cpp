@@ -27,11 +27,11 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column);
 bool possible(vector<vector<int>> qr);
 void add_impossible(vector<vector<int>> qr);
 
-bool validateLine(vector<int> line, int column, int lb);
-bool validateLineTransactions(vector<int> line, int linet, int x);
+bool validateLine(vector<int> qr, int line, int column);
+bool validateLineTransactions(vector<int> qr, int line, int column);
 
-bool validateCollumn(vector<vector<int>> qr, int line, int column);
-bool validataCollumnTransactions(vector<vector<int>> qr, int column);
+bool validateColumn(vector<vector<int>> qr, int line, int column);
+bool validateColumnTransactions(vector<vector<int>> qr, int column);
 
 bool validateDiagonals(vector<vector<int>> qr, int line, int column);
 bool validateQuadrants(vector<vector<int>> qr, int line, int column);
@@ -82,14 +82,14 @@ int main(){
 			}
 
 			vector<vector<int>> qr(size_qr, vector<int>(size_qr, 0));
+
 			//Validate input to check for defects and then we generate qr
-			
 			if(validate(size_qr)){
 				
 				//preprocesser not return properly, maybe it gets stuck somewhere(?)
 				preprocess(qr);
 				generate_qrs(qr, 0, 0);
-				print_qr(qr);
+				
 
 				//generate_qrs(qr, 0, 0);
 			}
@@ -100,14 +100,16 @@ int main(){
 			}
 			else if(generated == 1){
 				cout << "Valid case: 1 QR code decoded\n";
-				//print_qr(qr);
+				print_qr(final_qr);
 			}
 			else{
 				cout << "INVALID: " << generated << " QR Codes generated\n";
 			}
 
-			//We clear the input lines and reset generated qrs
+			//We clear the input lines, any impossible qrs, final qr and reset generated qrs counter
 			qr.clear();
+			final_qr.clear();
+			impossible.clear();
 			lb.clear();
 			cb.clear();
 			lt.clear();
@@ -366,6 +368,9 @@ void preprocess(vector<vector<int>>& qr){
 //will this ever be finished :c
 //was thinking if this function wouldnt work to generate multiple qrs, but since we dont
 //have to store more than one qr we can work with the same just copy it to not alter the ones in recursion
+
+//add the rest of validations, also not sure if it'll work like this, might need more parameters
+//CAN JUST CUT THIS IN HALF IF THE NUMBER OF TRANSITIONS ARE OVER, WE'RE ON A BLACK/WHITE WE FILL THE REST
 void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	int size_qr = (int)qr.size();
 	if(!possible(qr)){
@@ -387,25 +392,47 @@ void generate_qrs(vector<vector<int>>& qr, int line, int column){
 	//deal with the pre processing
 	//If white (2)
 	if(copy[line][column] == 2){
-		if(validateLine(copy[line], column, lb[line])){
+		if(validateLine(copy[line], line, column)){
 			generate_qrs(copy, line, column+1);
 		}
+	
 		impossible.insert(copy);
+		
+		return;
+	}
+	//If black (3)
+	else if(copy[line][column] == 3){
+		if(validateLine(copy[line], line, column)){
+			generate_qrs(copy, line, column+1);
+		}
+		
+		impossible.insert(copy);
+		
 		return;
 	}
 
-	//change to black
-	qr[line][column] = 1;
+	//could probably save the validation so i dont have to call it everytime?
 
-	//Validations
-	//if(validateLineBlack(qr[line], column, lb[line]) && validateCollumnBlack(qr, line, column)){
-		//generate_qrs(qr, line, collumn+1);
+	//change to black if it wasn't occupied by pre processing
+	//worth adding to impossible?
+	copy[line][column] = 1;
 
-	//}
+	if(validateLine(qr[line], line, column)){
+		generate_qrs(copy, line, column+1);
+	}
+	else{
+		impossible.insert(copy);
+	}
+	//change to white and calculate the same qr
+	copy[line][column] = 0;
+
+	if(validateLine(qr[line], line, column)){
+		generate_qrs(copy, line, column+1);
+	}
+	else{
+		impossible.insert(copy);
+	}
 	
-	//After validations we alter qr[line][collumn] to black
-
-	//more validations?
 	
 	return;
 }
@@ -419,23 +446,22 @@ void add_impossible(vector<vector<int>> qr){
 	return;
 }
 
-
-bool validateLine(vector<int> line, int column, int lb){
+bool validateLine(vector<int> qr, int line, int column){
 	int counter = 0;
-	int size_qr = (int)line.size();
+	int size_qr = (int)qr.size();
 
 	for(int i=0; i<column; ++i){
-		if(line[i] == 1 || line[i] == 3){
+		if(qr[i] == 1 || qr[i] == 3){
 			++counter;
 		}
 	}
-	if(counter <= lb && column<size_qr-1){
-		return true;
+	if(counter < lb[line] && column == size_qr-1  || counter > lb[line]){
+		return false;
 	}
 	return true;
 }
 
-bool validateCollumn(vector<vector<int>> qr, int line, int column){
+bool validateColumn(vector<vector<int>> qr, int line, int column){
 	int counter = 0;
 
 	for(int i = 0; i< line; ++i){
@@ -445,7 +471,21 @@ bool validateCollumn(vector<vector<int>> qr, int line, int column){
 	}
 	return true;
 }
-bool validataCollumnTransactions(vector<vector<int>> qr, int collumnt){
+bool validateLineTransactions(vector<int> qr, int line, int column){
+	int counter = 0;
+	int size_qr = (int)qr.size();
+	for(int i=0; i<column; ++i){
+		if((qr[i] == 1 && (qr[i+1] == 0 || qr[i+1]==2)) || (qr[i] == 3 && (qr[i+1] == 0 || qr[i+1]==2))){
+			++counter;
+		}
+	}
+	if((column == size_qr-1 && counter != lt[line]) || counter > lt[line]){
+		return false;
+	}
+
+	return true;
+}
+bool validateColumnTransactions(vector<vector<int>> qr, int columnt){
 	return true;
 }
 
@@ -468,10 +508,23 @@ bool validateDiagonals(vector<vector<int>> qr, int line, int column){
 	if(diagonal1 > db[0] || diagonal2 > db[1]){
 		return false;
 	}
-	//missing validations
+	//missing validations?
 	return true;
 }
-bool validateQuadrants(vector<vector<int>> qr, int line, int collumn){
+bool validateQuadrants(vector<vector<int>> qr, int line, int column){
+	int q1 = 0;
+	int q2 = 0;
+	int q3 = 0;
+	int q4 = 0;
+
+	int size_qr = (int)qr.size();
+
+	for(int i=0; i<line; ++i){
+		for(int j=0; j<column; ++j){
+
+		}
+	}
+
 	return true;
 }
 
